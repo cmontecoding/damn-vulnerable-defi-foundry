@@ -6,7 +6,7 @@ import {ReentrancyGuard} from "openzeppelin-contracts/security/ReentrancyGuard.s
 
 import {TrustfulOracle} from "./TrustfulOracle.sol";
 import {DamnValuableNFT} from "../DamnValuableNFT.sol";
-
+ 
 /**
  * @title Exchange
  * @author Damn Vulnerable DeFi (https://damnvulnerabledefi.xyz)
